@@ -8,11 +8,19 @@ const dotenv = require('dotenv').config();
 const db = new sqlite3.Database(process.env.DB_PATH);
 const { generateToken, authenticateToken } = require('./auth');
 
+// Allow CORS
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    next();
+})
+
 app.get('/', (req, res) => {
     res.send('Hello World!');
 })
 
-app.get('/login', (req, res) => {
+app.post('/login', (req, res) => {
     // The user data is actually hardcoded
     const user = {
         username: process.env.FAKE_LOGIN_USERNAME,
@@ -21,7 +29,10 @@ app.get('/login', (req, res) => {
     // Check if it match
     if(req.body.username === user.username && req.body.password === user.password) {
         const token = generateToken(user);
-        res.send(token);
+        let response = {
+            token: token
+        }
+        res.send(response);
     }else{
         res.status(403).send('Invalid credentials');
     }
@@ -84,7 +95,6 @@ app.get('/api/cars/:id', authenticateToken, (req, res) => {
 })
 
 app.post('/api/cars', authenticateToken, (req, res) => {
-    // The data is JSON encoded
     let data = req.body;
     db.serialize(() => {
         db.run(`
@@ -93,9 +103,30 @@ app.post('/api/cars', authenticateToken, (req, res) => {
         `, [data.brand, data.model, data.registrationNumber, data.notes, data.document, data.image])
     })
     res.send('Car added successfully!');
-    /** Example data =
-     *
-     */
+})
+
+app.put('/api/cars/:id', authenticateToken, (req, res) => {
+    let data = req.body;
+    let id = req.params.id;
+    db.serialize(() => {
+        db.run(`
+            UPDATE cars
+            SET brand = ?, model = ?, registrationNumber = ?, notes = ?, document = ?, image = ?
+            WHERE id = ?
+        `, [data.brand, data.model, data.registrationNumber, data.notes, data.document, data.image, id])
+    })
+    res.send('Car updated successfully!');
+})
+
+app.delete('/api/cars/:id', authenticateToken, (req, res) => {
+    let id = req.params.id;
+    db.serialize(() => {
+        db.run(`
+            DELETE FROM cars
+            WHERE id = ?
+        `, [id])
+    })
+    res.send('Car deleted successfully!');
 })
 
 app.listen(port, () => {
