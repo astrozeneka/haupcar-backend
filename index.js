@@ -41,6 +41,8 @@ app.post('/login', (req, res) => {
 app.get('/api/cars', authenticateToken, async (req, res) => {
     let offset = req.query.offset || 0;
     let limit = req.query.limit || 10;
+    let q = req.query.q || '';
+    let qQuery = q ? "WHERE brand LIKE '%" + q + "%'" : '';
     let data = [];
     await (()=>new Promise((resolve, reject)=>{
         db.serialize(() => {
@@ -60,6 +62,7 @@ app.get('/api/cars', authenticateToken, async (req, res) => {
                    ELSE 0
                 END AS hasImage
             FROM cars
+            ${qQuery}
             LIMIT ${limit} OFFSET ${offset}
         `, (err, row) => {
                 if (err) {
@@ -77,6 +80,7 @@ app.get('/api/cars', authenticateToken, async (req, res) => {
         db.serialize(() => {
             db.each(`
             SELECT COUNT(*) FROM cars
+            ${qQuery}
         `, (err, row) => {
                 if (err) {
                     console.error(err.message);
