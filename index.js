@@ -6,13 +6,28 @@ const port = 8000;
 const sqlite3 = require('sqlite3').verbose();
 const dotenv = require('dotenv').config();
 const db = new sqlite3.Database(process.env.DB_PATH);
-
+const { generateToken, authenticateToken } = require('./auth');
 
 app.get('/', (req, res) => {
     res.send('Hello World!');
 })
 
-app.get('/api/cars', (req, res) => {
+app.get('/login', (req, res) => {
+    // The user data is actually hardcoded
+    const user = {
+        username: process.env.FAKE_LOGIN_USERNAME,
+        password: process.env.FAKE_LOGIN_PASSWORD
+    }
+    // Check if it match
+    if(req.body.username === user.username && req.body.password === user.password) {
+        const token = generateToken(user);
+        res.send(token);
+    }else{
+        res.status(403).send('Invalid credentials');
+    }
+})
+
+app.get('/api/cars', authenticateToken, (req, res) => {
     let offset = req.query.offset || 0;
     let limit = req.query.limit || 10;
     let data = [];
@@ -49,7 +64,7 @@ app.get('/api/cars', (req, res) => {
 
 })
 
-app.get('/api/cars/:id', (req, res) => {
+app.get('/api/cars/:id', authenticateToken, (req, res) => {
     let id = req.params.id;
     let data = {};
     db.serialize(() => {
@@ -68,7 +83,7 @@ app.get('/api/cars/:id', (req, res) => {
     return data;
 })
 
-app.post('/api/cars', (req, res) => {
+app.post('/api/cars', authenticateToken, (req, res) => {
     // The data is JSON encoded
     let data = req.body;
     db.serialize(() => {
