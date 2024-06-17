@@ -119,9 +119,9 @@ app.put('/api/cars/:id', authenticateToken, (req, res) => {
     let data = req.body;
     // Sanitize the form data
     let errors = {}
-    if (!data.brand) errors.brand = 'Brand is required';
-    if (!data.model) errors.model = 'Model is required';
-    if (!data.registrationNumber) errors.registrationNumber = 'Registration number is required';
+    if (!data.brand || data.brand.length === 0) errors.brand = 'Brand is required';
+    if (!data.model || data.model.length === 0) errors.model = 'Model is required';
+    if (!data.registrationNumber || data.model.length === 0) errors.registrationNumber = 'Registration number is required';
     // If there is any errors, return 422
     if (Object.keys(errors).length > 0) {
         return res.status(422).send(errors);
