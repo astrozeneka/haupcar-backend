@@ -1,7 +1,7 @@
 
 const express = require('express');
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 const port = 8000;
 const sqlite3 = require('sqlite3').verbose();
 const dotenv = require('dotenv').config();
@@ -40,7 +40,7 @@ app.post('/login', (req, res) => {
 
 app.get('/api/cars', authenticateToken, (req, res) => {
     let offset = req.query.offset || 0;
-    let limit = req.query.limit || 10;
+    let limit = req.query.limit || 100;
     let data = [];
     db.serialize(() => {
         db.each(`
@@ -96,6 +96,16 @@ app.get('/api/cars/:id', authenticateToken, (req, res) => {
 
 app.post('/api/cars', authenticateToken, (req, res) => {
     let data = req.body;
+    // Sanitize the form data
+    let errors = {}
+    if (!data.brand) errors.brand = 'Brand is required';
+    if (!data.model) errors.model = 'Model is required';
+    if (!data.registrationNumber) errors.registrationNumber = 'Registration number is required';
+    // If there is any errors, return 422
+    if (Object.keys(errors).length > 0) {
+        return res.status(422).send(errors);
+    }
+
     db.serialize(() => {
         db.run(`
             INSERT INTO cars (brand, model, registrationNumber, notes, document, image)
@@ -107,6 +117,15 @@ app.post('/api/cars', authenticateToken, (req, res) => {
 
 app.put('/api/cars/:id', authenticateToken, (req, res) => {
     let data = req.body;
+    // Sanitize the form data
+    let errors = {}
+    if (!data.brand) errors.brand = 'Brand is required';
+    if (!data.model) errors.model = 'Model is required';
+    if (!data.registrationNumber) errors.registrationNumber = 'Registration number is required';
+    // If there is any errors, return 422
+    if (Object.keys(errors).length > 0) {
+        return res.status(422).send(errors);
+    }
     let id = req.params.id;
     db.serialize(() => {
         db.run(`
