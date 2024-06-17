@@ -38,40 +38,60 @@ app.post('/login', (req, res) => {
     }
 })
 
-app.get('/api/cars', authenticateToken, (req, res) => {
+app.get('/api/cars', authenticateToken, async (req, res) => {
     let offset = req.query.offset || 0;
-    let limit = req.query.limit || 100;
+    let limit = req.query.limit || 10;
     let data = [];
-    db.serialize(() => {
-        db.each(`
-            SELECT * FROM cars
+    await (()=>new Promise((resolve, reject)=>{
+        db.serialize(() => {
+            db.each(`
+            SELECT
+                id,
+                brand,
+                model,
+                registrationNumber,
+                notes,
+                CASE
+                   WHEN document IS NOT NULL AND DOCUMENT != '' THEN 1
+                   ELSE 0
+                END AS hasDocument,
+                CASE
+                   WHEN image IS NOT NULL AND image != '' THEN 1
+                   ELSE 0
+                END AS hasImage
+            FROM cars
             LIMIT ${limit} OFFSET ${offset}
         `, (err, row) => {
-            if (err) {
-                console.error(err.message);
-            }
-            data.push(row);
-        }, () => {
-            res.send(data);
+                if (err) {
+                    console.error(err.message);
+                }
+                data.push(row);
+            }, () => {
+                resolve(data)
+            })
         })
-    })
+    }))();
+
     let count = 0;
-    db.serialize(() => {
-        db.each(`
+    await (() => new Promise((resolve, reject) => {
+        db.serialize(() => {
+            db.each(`
             SELECT COUNT(*) FROM cars
         `, (err, row) => {
-            if (err) {
-                console.error(err.message);
-            }
-            count = row['COUNT(*)'];
-        }, () => {
-            console.log(`Total number of cars: ${count}`);
+                if (err) {
+                    console.error(err.message);
+                }
+                count = row['COUNT(*)'];
+            }, () => {
+                resolve(count)
+            })
         })
-    })
-    return {
+    }))();
+    console.log("Count : " + count)
+    res.send({
         "data": data,
         "count": count
-    }
+    })
 
 })
 
