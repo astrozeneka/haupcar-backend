@@ -8,7 +8,7 @@ const dotenv = require('dotenv').config();
 const db = new sqlite3.Database(process.env.DB_PATH);
 const { generateToken, authenticateToken } = require('./auth');
 
-// Allow CORS
+// Allow CORS policies
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
@@ -16,8 +16,11 @@ app.use((req, res, next) => {
     next();
 })
 
+/**
+ * Test route to check if the server is running
+ */
 app.get('/', (req, res) => {
-    res.send('Hello World!');
+    res.send('This is the backend server of the car management system.');
 })
 
 app.post('/login', (req, res) => {
@@ -38,6 +41,10 @@ app.post('/login', (req, res) => {
     }
 })
 
+/**
+ * API resources to get all cars
+ * This resource require authentication using JWT
+ */
 app.get('/api/cars', authenticateToken, async (req, res) => {
     let offset = req.query.offset || 0;
     let limit = req.query.limit || 10;
@@ -99,6 +106,10 @@ app.get('/api/cars', authenticateToken, async (req, res) => {
 
 })
 
+/**
+ * API resources to get a single car
+ * This resource require authentication using JWT
+ */
 app.get('/api/cars/:id', authenticateToken, (req, res) => {
     let id = req.params.id;
     let data = {};
@@ -118,6 +129,10 @@ app.get('/api/cars/:id', authenticateToken, (req, res) => {
     return data;
 })
 
+/**
+ * API resources to add a car
+ * This resource require authentication using JWT
+ */
 app.post('/api/cars', authenticateToken, (req, res) => {
     let data = req.body;
     // Sanitize the form data
@@ -139,6 +154,10 @@ app.post('/api/cars', authenticateToken, (req, res) => {
     res.send('Car added successfully!');
 })
 
+/**
+ * API resources to update a car
+ * This resource require authentication using JWT
+ */
 app.put('/api/cars/:id', authenticateToken, (req, res) => {
     let data = req.body;
     // Sanitize the form data
@@ -161,6 +180,10 @@ app.put('/api/cars/:id', authenticateToken, (req, res) => {
     res.send('Car updated successfully!');
 })
 
+/**
+ * API resources to delete a car
+ * This resource require authentication using JWT
+ */
 app.delete('/api/cars/:id', authenticateToken, (req, res) => {
     let id = req.params.id;
     db.serialize(() => {
@@ -172,6 +195,9 @@ app.delete('/api/cars/:id', authenticateToken, (req, res) => {
     res.send('Car deleted successfully!');
 })
 
+/**
+ * Listen
+ */
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 })
